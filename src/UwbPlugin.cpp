@@ -817,7 +817,7 @@ namespace gazebo
                 visualization_msgs::MarkerArray interferencesArray;
 
                 physics::Model_V models = this->world->Models();
-                physics::Link_V links = this->model->GetLinks();
+                physics::Link_V links;
 
                 for (physics::Model_V::iterator iter = models.begin(); iter != models.end(); ++iter)
                 {
@@ -827,6 +827,17 @@ namespace gazebo
                         physics::ModelPtr anchor = *iter;
 
                         addAnchor(anchor, markerArray, tagPose, anglesToTest, totalNumberAnglesToTest, currentTagPose);
+                    }else if(*iter != this->model){
+                        links = (*iter)->GetLinks();
+
+                        for (physics::Link_V::iterator link_iter = links.begin(); link_iter != links.end(); ++link_iter){
+                            if ((*link_iter)->GetName().find(this->anchorPrefix) == 0)
+                            {
+                                physics::LinkPtr anchor = *link_iter;
+
+                                addAnchor(anchor, markerArray, tagPose, anglesToTest, totalNumberAnglesToTest, currentTagPose);
+                            }
+                        }
                     }
                 }
 
