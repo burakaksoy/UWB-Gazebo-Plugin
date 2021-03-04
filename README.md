@@ -1,27 +1,44 @@
-**NOTE:** This repository is related with the next scientific work:
+# UWB Gazebo Sensor Plugin
+
+<p align="center">
+    <a href="https://github.com/Marius-Juston/gazebosensorplugins/graphs/contributors" alt="Contributors">
+        <img src="https://img.shields.io/github/contributors/Marius-Juston/gazebosensorplugins" /></a>
+    <a href="https://github.com/Marius-Juston/gazebosensorplugins/pulse" alt="Activity">
+        <img alt="GitHub commit activity" src="https://img.shields.io/github/commit-activity/m/Marius-Juston/gazebosensorplugins"></a>
+    <a href="https://github.com/Marius-Juston/gazebosensorplugins/stargazers">
+        <img alt="Stars" src="https://img.shields.io/github/stars/Marius-Juston/gazebosensorplugins"></a>
+    <a href="https://github.com/Marius-Juston/gazebosensorplugins/network/members">
+        <img alt="Forks" src="https://img.shields.io/github/forks/Marius-Juston/gazebosensorplugins"></a>
+    <a href="https://github.com/Marius-Juston/gazebosensorplugins/issues">
+        <img alt="Issues" src="https://img.shields.io/github/issues/Marius-Juston/gazebosensorplugins"></a>
+    <a href="./LICENSE" alt="Activity">
+        <img alt="GitHub" src="https://img.shields.io/github/license/Marius-Juston/gazebosensorplugins"></a>
+</p>
+
+**NOTE:** This repository is related with the next scientific work and was forked from this [repository](https://github.com/valentinbarral/gazebosensorplugins):
 
 **Barral, V.**; **Escudero, C.J.**; **García-Naya, J.A.**; **Maneiro-Catoira, R.** *NLOS Identification and Mitigation Using Low-Cost UWB Devices.* Sensors 2019, 19, 3464.[https://doi.org/10.3390/s19163464](https://doi.org/10.3390/s19163464)
 
 If you use this code for your scientific activities, a citation is appreciated.
 
-# README
+## README
 
 This project contains several plugins to use in Gazebo simulator:
 
-## Requirements
+### Requirements
 
 Libraries ```libignition-math4-dev``` and ```libgazebo9-dev``` must be installed before building this package.
 
 Also, package ```gtec_msgs``` must be present in the same work space. This package can be found here:  [https://github.com/valentinbarral/rosmsgs](https://github.com/valentinbarral/rosmsgs)
 
-## Build
+### Build
 
 After cloning the repository in a catkin workspace:
 ```
 $ catkin_make
 ```
 
-## UWB Plugin
+### UWB Plugin
 
 ![GTEC UWB Plugin in RVIZ](https://user-images.githubusercontent.com/38099967/64428790-e66b6780-d0b4-11e9-8f6f-489d8eb949c8.png)
 
@@ -36,16 +53,16 @@ NOTE: the rebounds are only computed using obstacles placed at the same height t
 
 To add the plugin to a Gazebo model, the next code must be present in the .sdf o .urdf.
 
-```
+```xml
 <plugin name='libgtec_uwb_plugin' filename='libgtec_uwb_plugin.so'>
-      <update_rate>25</update_rate>
-      <nlosSoftWallWidth>0.25</nlosSoftWallWidth>
-      <tag_z_offset>1.5</tag_z_offset>
-      <tag_link>tag_0</tag_link>
-      <anchor_prefix>uwb_anchor</anchor_prefix>
-      <all_los>false</all_los>
-      <tag_id>0</tag_id>
-    </plugin>
+  <update_rate>25</update_rate>
+  <nlosSoftWallWidth>0.25</nlosSoftWallWidth>
+  <tag_z_offset>1.5</tag_z_offset>
+  <tag_link>tag_0</tag_link>
+  <anchor_prefix>uwb_anchor</anchor_prefix>
+  <all_los>false</all_los>
+  <tag_id>0</tag_id>
+</plugin>
 ``` 
 
 * update_rate: num. of rates published by second.
@@ -58,20 +75,59 @@ To add the plugin to a Gazebo model, the next code must be present in the .sdf o
 
 To place an anchor in a Gazebo's world, the only requirement is that the model must have a name starting with ```anchor_prefix```. A simple model could be:
 
-```
+```xml
 <model name="uwb_anchor0">
-      <pose>0 0 1.5 0 0 0</pose>
-      <static>1</static>
-      <link name="link">
-        <visual name="visual">
-          <geometry>
-            <box>
-              <size>0.2 0.2 0.2</size>
-            </box>
-          </geometry>
-        </visual>
-      </link>
-    </model>
+  <pose>0 0 1.5 0 0 0</pose>
+  <static>1</static>
+  <link name="link">
+    <visual name="visual">
+      <geometry>
+        <box>
+          <size>0.2 0.2 0.2</size>
+        </box>
+      </geometry>
+    </visual>
+  </link>
+</model>
+```
+
+otherwise you can place an anchor in the world by naming a link with ```anchor_prefix```. This link can be defined in a SDF or a URDF as long as Gazebo can see it. For fixed joints you might need to enabled:
+
+```xml
+<link name="uwb_anchor0">
+  <inertial>
+    <mass value="1" />
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0" />
+  </inertial>
+
+  <collision>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <geometry>
+      <box size="1 1 1"/>
+    </geometry>
+  </collision>
+  <visual>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <geometry>
+      <box size="1 1 1"/>
+    </geometry>
+  </visual>
+</link>
+
+<joint name="uwb_anchor_joint" type="fixed">
+  <origin xyz="0 0 0" rpy="0 0 0"/>
+  <parent link="base_link"/>
+  <child link="uwb_anchor0"/>
+</joint>
+
+<gazebo reference="uwb_anchor_joint">
+  <preserveFixedJoint>true</preserveFixedJoint>
+</gazebo>
+
+<gazebo reference="uwb_anchor0">
+  <material>Gazebo/White</material>
+</gazebo>
 ```
 
 This plugin publish the next topics:
