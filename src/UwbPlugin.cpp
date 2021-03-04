@@ -835,7 +835,7 @@ namespace gazebo
             }
         }
 
-        void addAnchor(const physics::EntityPtr & anchor, const visualization_msgs::MarkerArray & markerArray, const ignition::math::Pose3d & tagPose, const double* anglesToTest, const int & totalNumberAnglesToTest, const ignition::math::Vector3d & currentTagPose){
+        void addAnchor(const physics::EntityPtr & anchor, visualization_msgs::MarkerArray & markerArray, const ignition::math::Pose3d & tagPose, const double* anglesToTest, const int & totalNumberAnglesToTest, const ignition::math::Vector3d & currentTagPose){
             std::string aidStr = anchor->GetName().substr(this->anchorPrefix.length());
             int aid = std::stoi(aidStr);
             ignition::math::Pose3d anchorPose = anchor->WorldPose();
