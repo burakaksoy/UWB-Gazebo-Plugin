@@ -1,18 +1,18 @@
 # UWB Gazebo Sensor Plugin
 
 <p align="center">
-    <a href="https://github.com/Marius-Juston/gazebosensorplugins/graphs/contributors" alt="Contributors">
-        <img src="https://img.shields.io/github/contributors/Marius-Juston/gazebosensorplugins" /></a>
-    <a href="https://github.com/Marius-Juston/gazebosensorplugins/pulse" alt="Activity">
-        <img alt="GitHub commit activity" src="https://img.shields.io/github/commit-activity/m/Marius-Juston/gazebosensorplugins"></a>
-    <a href="https://github.com/Marius-Juston/gazebosensorplugins/stargazers">
-        <img alt="Stars" src="https://img.shields.io/github/stars/Marius-Juston/gazebosensorplugins"></a>
-    <a href="https://github.com/Marius-Juston/gazebosensorplugins/network/members">
-        <img alt="Forks" src="https://img.shields.io/github/forks/Marius-Juston/gazebosensorplugins"></a>
-    <a href="https://github.com/Marius-Juston/gazebosensorplugins/issues">
-        <img alt="Issues" src="https://img.shields.io/github/issues/Marius-Juston/gazebosensorplugins"></a>
+    <a href="https://github.com/AUVSL/UWB-Gazebo-Plugin/graphs/contributors" alt="Contributors">
+        <img src="https://img.shields.io/github/contributors/AUVSL/UWB-Gazebo-Plugin" /></a>
+    <a href="https://github.com/AUVSL/UWB-Gazebo-Plugin/pulse" alt="Activity">
+        <img alt="GitHub commit activity" src="https://img.shields.io/github/commit-activity/m/AUVSL/UWB-Gazebo-Plugin"></a>
+    <a href="https://github.com/AUVSL/UWB-Gazebo-Plugin/stargazers">
+        <img alt="Stars" src="https://img.shields.io/github/stars/AUVSL/UWB-Gazebo-Plugin"></a>
+    <a href="https://github.com/AUVSL/UWB-Gazebo-Plugin/network/members">
+        <img alt="Forks" src="https://img.shields.io/github/forks/AUVSL/UWB-Gazebo-Plugin"></a>
+    <a href="https://github.com/AUVSL/UWB-Gazebo-Plugin/issues">
+        <img alt="Issues" src="https://img.shields.io/github/issues/AUVSL/UWB-Gazebo-Plugin"></a>
     <a href="./LICENSE" alt="Activity">
-        <img alt="GitHub" src="https://img.shields.io/github/license/Marius-Juston/gazebosensorplugins"></a>
+        <img alt="GitHub" src="https://img.shields.io/github/license/AUVSL/UWB-Gazebo-Plugin"></a>
 </p>
 
 **NOTE:** This repository is related with the next scientific work and was forked from this [repository](https://github.com/valentinbarral/gazebosensorplugins):
