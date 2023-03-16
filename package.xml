@@ -1,19 +1,28 @@
 <?xml version="1.0"?>
 <package>
-  <name>gazebosensorplugins</name>
+  <name>uwb_gazebo_plugin</name>
   <version>0.0.0</version>
-  <description>The gazebosensorplugins package. Includes some plugins for Gazebo 9</description>
+  <description>The uwb_gazebo_plugin package. Includes some plugins for Gazebo 9. Forked from https://github.com/AUVSL/UWB-Gazebo-Plugin and heavily modified.</description>
 
-  <maintainer email="valentin.barral@udc.es">Valentin Barral</maintainer>
+  <maintainer email="burakaksoy20@gmail.com">Burak Aksoy</maintainer>
   <license>MIT</license>
 
   <buildtool_depend>catkin</buildtool_depend>
+
   <build_depend>gazebo_ros</build_depend>
   <build_depend>roscpp</build_depend>
+  <build_depend>rospy</build_depend>
+
+  <build_depend>message_generation</build_depend>
+
   <run_depend>gazebo_ros</run_depend>
   <run_depend>roscpp</run_depend>
-  <build_depend>gtec_msgs</build_depend>
-  <run_depend>gtec_msgs</run_depend>
+  <run_depend>rospy</run_depend>
+
+  <run_depend>std_msgs</run_depend>
+  <!-- <run_depend>message_generation</run_depend> -->
+  <run_depend>message_runtime</run_depend>
+  
   <run_depend>tf</run_depend>
 
   <export>

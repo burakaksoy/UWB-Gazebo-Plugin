@@ -1,25 +1,7 @@
 # UWB Gazebo Sensor Plugin
 
-<p align="center">
-    <a href="https://github.com/AUVSL/UWB-Gazebo-Plugin/graphs/contributors" alt="Contributors">
-        <img src="https://img.shields.io/github/contributors/AUVSL/UWB-Gazebo-Plugin" /></a>
-    <a href="https://github.com/AUVSL/UWB-Gazebo-Plugin/pulse" alt="Activity">
-        <img alt="GitHub commit activity" src="https://img.shields.io/github/commit-activity/m/AUVSL/UWB-Gazebo-Plugin"></a>
-    <a href="https://github.com/AUVSL/UWB-Gazebo-Plugin/stargazers">
-        <img alt="Stars" src="https://img.shields.io/github/stars/AUVSL/UWB-Gazebo-Plugin"></a>
-    <a href="https://github.com/AUVSL/UWB-Gazebo-Plugin/network/members">
-        <img alt="Forks" src="https://img.shields.io/github/forks/AUVSL/UWB-Gazebo-Plugin"></a>
-    <a href="https://github.com/AUVSL/UWB-Gazebo-Plugin/issues">
-        <img alt="Issues" src="https://img.shields.io/github/issues/AUVSL/UWB-Gazebo-Plugin"></a>
-    <a href="./LICENSE" alt="Activity">
-        <img alt="GitHub" src="https://img.shields.io/github/license/AUVSL/UWB-Gazebo-Plugin"></a>
-</p>
-
-**NOTE:** This repository is related with the next scientific work and was forked from this [repository](https://github.com/valentinbarral/gazebosensorplugins):
-
-**Barral, V.**; **Escudero, C.J.**; **García-Naya, J.A.**; **Maneiro-Catoira, R.** *NLOS Identification and Mitigation Using Low-Cost UWB Devices.* Sensors 2019, 19, 3464.[https://doi.org/10.3390/s19163464](https://doi.org/10.3390/s19163464)
-
-If you use this code for your scientific activities, a citation is appreciated.
+Forked from: [https://github.com/AUVSL/UWB-Gazebo-Plugin](https://github.com/AUVSL/UWB-Gazebo-Plugin)
+And heavily modified.
 
 ## README
 
@@ -28,8 +10,6 @@ This project contains several plugins to use in Gazebo simulator:
 ### Requirements
 
 Libraries ```libignition-math4-dev``` and ```libgazebo9-dev``` must be installed before building this package.
-
-Also, package ```gtec_msgs``` must be present in the same work space. This package can be found here:  [https://github.com/valentinbarral/rosmsgs](https://github.com/valentinbarral/rosmsgs)
 
 ### Build
 
@@ -40,7 +20,7 @@ $ catkin_make
 
 ### UWB Plugin
 
-![GTEC UWB Plugin in RVIZ](https://user-images.githubusercontent.com/38099967/64428790-e66b6780-d0b4-11e9-8f6f-489d8eb949c8.png)
+![UWB Plugin in RVIZ](https://user-images.githubusercontent.com/38099967/64428790-e66b6780-d0b4-11e9-8f6f-489d8eb949c8.png)
 
 This plugin simulates a UWB tag sensor. The plugin simulates the reception of UWB ranging measurements from a set of anchors placed on the scenario. The plugin also produces different measurements depending on the type of line of sight between the tag and each anchor. Thus, four models are considered:
 
@@ -54,7 +34,7 @@ NOTE: the rebounds are only computed using obstacles placed at the same height t
 To add the plugin to a Gazebo model, the next code must be present in the .sdf o .urdf.
 
 ```xml
-<plugin name='libgtec_uwb_plugin' filename='libgtec_uwb_plugin.so'>
+<plugin name='libuwb_plugin' filename='libuwb_plugin.so'>
   <update_rate>25</update_rate>
   <nlosSoftWallWidth>0.25</nlosSoftWallWidth>
   <tag_z_offset>1.5</tag_z_offset>
@@ -62,6 +42,8 @@ To add the plugin to a Gazebo model, the next code must be present in the .sdf o
   <anchor_prefix>uwb_anchor</anchor_prefix>
   <all_los>false</all_los>
   <tag_id>0</tag_id>
+  <topic_name_ranging>uwb/tag_1_ranging</topic_name_ranging>
+  <topic_name_anchors>uwb/tag_1_anchors</topic_name_anchors>
 </plugin>
 ``` 
 
@@ -71,6 +53,8 @@ To add the plugin to a Gazebo model, the next code must be present in the .sdf o
 * anchor_prefix: all the anchors placed in the scenario must have a unique name that starts with this prefix.
 * all_los: if true, all the anchors are considered as in a LOS scenario. Except if there are too far from the tag, in that case they are considered as NLOS.
 * tag_id: tag identifier, a number.
+* topic_name_ranging: Topic name to publish the ranging messages from the tag
+* topic_name_anchors: Topic name to publish Visualization MarkerArray messages from the tag
 
 
 To place an anchor in a Gazebo's world, the only requirement is that the model must have a name starting with ```anchor_prefix```. A simple model could be:
@@ -132,9 +116,9 @@ otherwise you can place an anchor in the world by naming a link with ```anchor_p
 
 This plugin publish the next topics:
 
-- ```/gtec/gazebo/uwb/ranging/tag_id``` : where ```tag_id``` is the value configured in the plugins. This topic publish the UWB range estimations using messages of type: gtec_msgs/Ranging.msg ([https://github.com/valentinbarral/rosmsgs](https://github.com/valentinbarral/rosmsgs))
+- ```/uwb/ranging``` : where ```tag_id``` is the value configured in the plugins. This topic publish the UWB range estimations using messages of type: uwb_gazebo_plugin/Ranging.msg
 
-- ```/gtec/gazebo/uwb/anchors/tag_id``` : where ```tag_id``` is the value configured in the plugins. This topic publish the position of the UWB anchors in the scenario. Each anchor have a different color depending of its current LOS mode: green-LOS, yellow-NLOS Soft, blue-NLOS Hard and red-NLOS. The published messages are of type visualization_msgs/MarkerArray.msg ([visualization_msgs/MarkerArray Message](http://docs.ros.org/melodic/api/visualization_msgs/html/msg/MarkerArray.html))
+- ```/uwb/anchors``` : where ```tag_id``` is the value configured in the plugins. This topic publish the position of the UWB anchors in the scenario. Each anchor have a different color depending of its current LOS mode: green-LOS, yellow-NLOS Soft, blue-NLOS Hard and red-NLOS. The published messages are of type visualization_msgs/MarkerArray.msg ([visualization_msgs/MarkerArray Message](http://docs.ros.org/melodic/api/visualization_msgs/html/msg/MarkerArray.html))
 
 
 

@@ -29,7 +29,7 @@ SOFTWARE.
 #include <gazebo/sensors/Noise.hh>
 #include <boost/bind.hpp>
 #include <ros/ros.h>
-#include <gtec_msgs/Ranging.h>
+#include <uwb_gazebo_plugin/Ranging.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <visualization_msgs/Marker.h>
@@ -652,7 +652,7 @@ namespace gazebo
 
             if (!_sdf->HasElement("update_rate"))
             {
-                ROS_FATAL_STREAM("GTEC UWB Plugin needs the parameter: update_rate");
+                ROS_FATAL_STREAM("UWB Gazebo Plugin needs the parameter: update_rate");
             }
 
             this->model = _parent;
@@ -708,31 +708,47 @@ namespace gazebo
             if (_sdf->HasElement("anchor_prefix"))
             {
                 this->anchorPrefix = _sdf->Get<std::string>("anchor_prefix");
-            }
-            else
-            {
+            } else {
                 this->anchorPrefix = "uwb_anchor";
             }
 
-            ROS_INFO("GTEC UWB Plugin is running. Tag %d", this->tagId);
-            ROS_INFO("GTEC UWB Plugin All parameters loaded");
+            ROS_INFO("UWB Gazebo Plugin is running. Tag %d", this->tagId);
+
+            if (!_sdf->HasElement("frame_name"))
+            {
+                ROS_DEBUG_NAMED("UWB", "UWB Plugin missing <frame_name>, defaults to world");
+                this->frameName = "world";
+            }
+            else
+                this->frameName = _sdf->GetElement("frame_name")->Get<std::string>();
+
+
+            ROS_INFO("UWB Gazebo Plugin All parameters loaded");
 
             this->lastUpdateTime = common::Time(0.0);
 
-            std::string topicRanging = "/gtec/toa/ranging";
+            std::string topicRanging = "/uwb/ranging";
+            if (_sdf->HasElement("topic_name_ranging")){
+                topicRanging = _sdf->Get<std::string>("topic_name_ranging");
+            }
 
-            ROS_INFO("GTEC UWB Plugin Ranging Publishing in %s", topicRanging.c_str());
+            ROS_INFO("UWB Gazebo Plugin Ranging Publishing in %s", topicRanging.c_str());
 
-/*            stringStream.str("");
-            stringStream.clear();
-            stringStream << "/gtec/toa/anchors" << this->tagId;*/
-            std::string topicAnchors = "/gtec/toa/anchors";
+            std::string topicAnchors = "/uwb/anchors";
+            if (_sdf->HasElement("topic_name_ranging")){
+                topicAnchors = _sdf->Get<std::string>("topic_name_anchors");
+            }
 
-            ROS_INFO("GTEC UWB Plugin Anchors Position Publishing in %s", topicAnchors.c_str());
+            ROS_INFO("UWB Gazebo Plugin Anchors Position Publishing in %s", topicAnchors.c_str());
 
-            ros::NodeHandle n;
-            this->gtecUwbPub = n.advertise<gtec_msgs::Ranging>(topicRanging, 1000);
-            this->gtecAnchors = n.advertise<visualization_msgs::MarkerArray>(topicAnchors, 1000);
+            std::string robotNamespace = "";
+            if (_sdf->HasElement("robot_namespace")){
+                robotNamespace = _sdf->Get<std::string>("robot_namespace") + "/";
+            }
+
+            ros::NodeHandle n(robotNamespace);
+            this->uwbPub = n.advertise<uwb_gazebo_plugin::Ranging>(topicRanging, 1000);
+            this->anchorsPub = n.advertise<visualization_msgs::MarkerArray>(topicAnchors, 1000);
 
             this->firstRay = boost::dynamic_pointer_cast<physics::RayShape>(
                                  this->world->Physics()->CreateShape("ray", physics::CollisionPtr()));
@@ -841,7 +857,7 @@ namespace gazebo
                     }
                 }
 
-                this->gtecAnchors.publish(markerArray);
+                this->anchorsPub.publish(markerArray);
                 this->sequence++;
             }
         }
@@ -1083,19 +1099,19 @@ namespace gazebo
 
                 if (losType!=NLOS)
                 {
-                    gtec_msgs::Ranging ranging_msg;
+                    uwb_gazebo_plugin::Ranging ranging_msg;
                     ranging_msg.anchorId = aid;
                     ranging_msg.tagId = this->tagId;
                     ranging_msg.range = rangingValue;
                     ranging_msg.seq = this->sequence;
                     ranging_msg.rss = powerValue;
                     ranging_msg.errorEstimation = 0.00393973;
-                    this->gtecUwbPub.publish(ranging_msg);
+                    this->uwbPub.publish(ranging_msg);
                 }
             }
 
             visualization_msgs::Marker marker;
-            marker.header.frame_id = "world";
+            marker.header.frame_id = this->frameName;
             marker.header.stamp = ros::Time();
             marker.id = aid;
             marker.type = visualization_msgs::Marker::CYLINDER;
@@ -1156,7 +1172,7 @@ namespace gazebo
     public:
         void Reset() override
         {
-            ROS_INFO("GTEC UWB Plugin RESET");
+            ROS_INFO("UWB Gazebo Plugin RESET");
             this->lastUpdateTime = common::Time(0.0);
         }
 
@@ -1179,11 +1195,13 @@ namespace gazebo
     private:
         std::string anchorPrefix;
     private:
+        std::string frameName;
+    private:
         physics::LinkPtr tagLink;
     private:
-        ros::Publisher gtecUwbPub;
+        ros::Publisher uwbPub;
     private:
-        ros::Publisher gtecAnchors;
+        ros::Publisher anchorsPub;
     private:
         unsigned char sequence;
     private:
