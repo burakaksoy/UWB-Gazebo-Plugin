@@ -27,14 +27,20 @@ SOFTWARE.
 #include "gazebo/physics/PhysicsTypes.hh"
 #include <gazebo/common/common.hh>
 #include <gazebo/sensors/Noise.hh>
+#include <gazebo/rendering/DynamicLines.hh>
+
 #include <boost/bind.hpp>
 #include <ros/ros.h>
+
 #include <uwb_gazebo_plugin/Ranging.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <std_msgs/String.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <visualization_msgs/Marker.h>
-#include <gazebo/rendering/DynamicLines.hh>
+
 #include <tf/transform_datatypes.h>
+
+#include <string>
 
 namespace gazebo
 {
@@ -640,7 +646,6 @@ namespace gazebo
             this->updatePeriod = common::Time(0.0);
         }
 
-    public:
         void Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf)
         {
             if (!ros::isInitialized())
@@ -676,6 +681,7 @@ namespace gazebo
             {
                 this->tagId = _sdf->Get<double>("tag_id");
             }
+            ROS_INFO("UWB Gazebo Plugin is running. Tag %d", this->tagId);
 
             if (_sdf->HasElement("tag_z_offset"))
             {
@@ -712,8 +718,6 @@ namespace gazebo
                 this->anchorPrefix = "uwb_anchor";
             }
 
-            ROS_INFO("UWB Gazebo Plugin is running. Tag %d", this->tagId);
-
             if (!_sdf->HasElement("frame_name"))
             {
                 ROS_DEBUG_NAMED("UWB", "UWB Plugin missing <frame_name>, defaults to world");
@@ -734,6 +738,13 @@ namespace gazebo
 
             ROS_INFO("UWB Gazebo Plugin Ranging Publishing in %s", topicRanging.c_str());
 
+            std::string topicSerialRanging = "/uwb/serial_ranging";
+            if (_sdf->HasElement("topic_name_serial_ranging")){
+                topicSerialRanging = _sdf->Get<std::string>("topic_name_serial_ranging");
+            }
+
+            ROS_INFO("UWB Gazebo Plugin Ranging Publishing in %s", topicSerialRanging.c_str());
+
             std::string topicAnchors = "/uwb/anchors";
             if (_sdf->HasElement("topic_name_ranging")){
                 topicAnchors = _sdf->Get<std::string>("topic_name_anchors");
@@ -748,6 +759,7 @@ namespace gazebo
 
             ros::NodeHandle n(robotNamespace);
             this->uwbPub = n.advertise<uwb_gazebo_plugin::Ranging>(topicRanging, 1000);
+            this->uwbSerialPub = n.advertise<std_msgs::String>(topicSerialRanging, 1000);
             this->anchorsPub = n.advertise<visualization_msgs::MarkerArray>(topicAnchors, 1000);
 
             this->firstRay = boost::dynamic_pointer_cast<physics::RayShape>(
@@ -760,7 +772,6 @@ namespace gazebo
                 event::Events::ConnectWorldUpdateBegin(boost::bind(&UwbPlugin::OnUpdate, this, _1));
         }
 
-    public:
         void OnUpdate(const common::UpdateInfo &_info)
         {
             common::Time simTime = _info.simTime;
@@ -800,7 +811,8 @@ namespace gazebo
                 // }
 
                 double startAngle = currentYaw;
-                double arc = 3 * M_PI / 2;
+                // double arc = 3 * M_PI / 2;
+                double arc = M_PI;
                 int numAnglesToTestBySide = 30;
                 double incrementAngle = arc / numAnglesToTestBySide;
                 int totalNumberAnglesToTest = 1 + 2 * numAnglesToTestBySide;
@@ -830,7 +842,10 @@ namespace gazebo
                 }
 
                 visualization_msgs::MarkerArray markerArray;
-                visualization_msgs::MarkerArray interferencesArray;
+                
+                std_msgs::String serial_ranging_msg;
+                serial_ranging_msg.data = "";
+                int num_readings = 0;
 
                 physics::Model_V models = this->world->Models();
                 physics::Link_V links;
@@ -842,7 +857,8 @@ namespace gazebo
                     {
                         physics::ModelPtr anchor = *iter;
 
-                        addAnchor(anchor, markerArray, tagPose, anglesToTest, totalNumberAnglesToTest, currentTagPose);
+                        addAnchor(anchor, markerArray, serial_ranging_msg, num_readings, 
+                                    tagPose, anglesToTest, totalNumberAnglesToTest, currentTagPose);
                     }else if(*iter != this->model){
                         links = (*iter)->GetLinks();
 
@@ -851,24 +867,45 @@ namespace gazebo
                             {
                                 physics::LinkPtr anchor = *link_iter;
 
-                                addAnchor(anchor, markerArray, tagPose, anglesToTest, totalNumberAnglesToTest, currentTagPose);
+                                addAnchor(anchor, markerArray, serial_ranging_msg, num_readings, 
+                                    tagPose, anglesToTest, totalNumberAnglesToTest, currentTagPose);
                             }
                         }
                     }
                 }
+
+
+                serial_ranging_msg.data = "DIST,"
+                                            + std::to_string(num_readings)
+                                            +","+ serial_ranging_msg.data
+                                            +"POS"
+                                            +","+ std::to_string(currentTagPose.X())
+                                            +","+ std::to_string(currentTagPose.Y())
+                                            +","+ std::to_string(currentTagPose.Z())
+                                            +","+ std::to_string(this->sequence);
+
+                this->uwbSerialPub.publish(serial_ranging_msg);
 
                 this->anchorsPub.publish(markerArray);
                 this->sequence++;
             }
         }
 
-        void addAnchor(const physics::EntityPtr & anchor, visualization_msgs::MarkerArray & markerArray, const ignition::math::Pose3d & tagPose, const double* anglesToTest, const int & totalNumberAnglesToTest, const ignition::math::Vector3d & currentTagPose){
+        void addAnchor(const physics::EntityPtr & anchor, 
+                       visualization_msgs::MarkerArray & markerArray, 
+                       std_msgs::String & serial_ranging_msg,
+                       int & num_readings,
+                       const ignition::math::Pose3d & tagPose, 
+                       const double* anglesToTest, 
+                       const int & totalNumberAnglesToTest, 
+                       const ignition::math::Vector3d & currentTagPose)
+        {
             std::string aidStr = anchor->GetName().substr(this->anchorPrefix.length());
             int aid = std::stoi(aidStr);
             ignition::math::Pose3d anchorPose = anchor->WorldPose();
 
             LOSType losType = LOS;
-            double distance = tagPose.Pos().Distance(anchorPose.Pos());
+            const double distance = tagPose.Pos().Distance(anchorPose.Pos());
             double distanceAfterRebounds = 0;
             double currentAngle = 0;
 
@@ -891,7 +928,6 @@ namespace gazebo
                 }
                 else
                 {
-
                     //We use a second ray to measure the distance from anchor to tag, so we can
                     //know what is the width of the walls
                     double distanceToObstacleFromAnchor;
@@ -914,15 +950,14 @@ namespace gazebo
                         //We try to find a rebound to reach the anchor from the tag
                         bool end = false;
 
-                        double maxDistance = 30;
+                        const double maxDistance = 30;
                         double distanceToRebound = 0;
                         double distanceToFinalObstacle = 0;
                         double distanceNlosHard = 0;
 
-                        double stepFloor = 1;
-                        double startFloorDistanceCheck = 2;
-                        int numStepsFloor = 6;
-
+                        const double stepFloor = 1;
+                        const double startFloorDistanceCheck = 2;
+                        const int numStepsFloor = 6;
 
                         std::string finalObstacleName;
                         int indexRay = 0;
@@ -932,9 +967,7 @@ namespace gazebo
 
                         while (!end)
                         {
-
                             currentAngle = anglesToTest[indexRay];
-
 
                             double x = currentTagPose.X() + maxDistance * cos(currentAngle);
                             double y = currentTagPose.Y() + maxDistance * sin(currentAngle);
@@ -952,7 +985,6 @@ namespace gazebo
                                 y = currentTagPose.Y() + horizontalDistance * sin(currentAngle);
 
                                 z = -1*(h - currentTagPose.Z());
-
                             }
 
                             ignition::math::Vector3d rayPoint(x, y, z);
@@ -980,16 +1012,12 @@ namespace gazebo
 
                                 if (finalObstacleName.compare("") == 0)
                                 {
-
-
-
                                     //We reach the anchor after one rebound
                                     distanceToFinalObstacle = anchorPose.Pos().Distance(collisionPoint);
 
                                     if (currentFloorDistance>0 ){
                                             //ROS_INFO("Rebound in GROUND %s - Distance: %f", obstacleName.c_str(), distanceToFinalObstacle);   
                                     }
-
 
                                     if (distanceToRebound + distanceToFinalObstacle <= maxDBDistance)
                                     {
@@ -1014,14 +1042,11 @@ namespace gazebo
                             else
                             {
                                 if (currentFloorDistance<numStepsFloor){
-
-                                currentFloorDistance+=1;
-                                indexRay= 0;
-
-                                } else {
+                                    currentFloorDistance+=1;
+                                    indexRay= 0;
+                                } else{
                                     end = true;  
                                 }
-
                             }
                         }
 
@@ -1107,9 +1132,20 @@ namespace gazebo
                     ranging_msg.rss = powerValue;
                     ranging_msg.errorEstimation = 0.00393973;
                     this->uwbPub.publish(ranging_msg);
+
+
+                    serial_ranging_msg.data += "AN" + std::to_string(num_readings)
+                                                +","+ std::to_string(aid)
+                                                +","+ std::to_string(anchorPose.Pos().X())
+                                                +","+ std::to_string(anchorPose.Pos().Y())
+                                                +","+ std::to_string(anchorPose.Pos().Z())
+                                                +","+ std::to_string((double)rangingValue/1000.0)
+                                                +",";
+                    num_readings++;
                 }
             }
 
+            // Create the marker
             visualization_msgs::Marker marker;
             marker.header.frame_id = this->frameName;
             marker.header.stamp = ros::Time();
@@ -1127,7 +1163,6 @@ namespace gazebo
             marker.scale.y = 0.2;
             marker.scale.z = 0.5;
             marker.color.a = 1.0;
-
             if (losType == LOS)
             {
                 marker.color.r = 0.0;
@@ -1152,11 +1187,9 @@ namespace gazebo
                 marker.color.g = 0.0;
                 marker.color.b = 0.0;
             }
-
             markerArray.markers.push_back(marker);
         }
 
-    public:
         void SetUpdateRate(double _rate)
         {
             if (_rate > 0.0)
@@ -1169,7 +1202,6 @@ namespace gazebo
             }
         }
 
-    public:
         void Reset() override
         {
             ROS_INFO("UWB Gazebo Plugin RESET");
@@ -1178,45 +1210,33 @@ namespace gazebo
 
     private:
         physics::ModelPtr model;
-    private:
         physics::WorldPtr world;
-    private:
-        physics::RayShapePtr firstRay;
-    private:
-        physics::RayShapePtr secondRay;
-    private:
+
         event::ConnectionPtr updateConnection;
-    private:
-        common::Time updatePeriod;
-    private:
-        common::Time lastUpdateTime;
-    private:
-        double tagZOffset;
-    private:
-        std::string anchorPrefix;
-    private:
-        std::string frameName;
-    private:
-        physics::LinkPtr tagLink;
-    private:
+
+        physics::RayShapePtr firstRay;
+        physics::RayShapePtr secondRay;
+        
         ros::Publisher uwbPub;
-    private:
         ros::Publisher anchorsPub;
-    private:
-        unsigned char sequence;
-    private:
-        double nlosSoftWallWidth;
-    private:
-        double maxDBDistance;
-    private:
-        double stepDBDistance;
-    private:
-        bool allBeaconsAreLOS;
-    private:
+        ros::Publisher uwbSerialPub;
+                
+        common::Time lastUpdateTime;
+
+        double tagZOffset;
+        std::string frameName;
+        physics::LinkPtr tagLink;
+        bool useParentAsReference; // related to tagLing
         int tagId;
-    private:
-        bool useParentAsReference;
-    private:
+        std::string anchorPrefix;
+        common::Time updatePeriod;
+        double nlosSoftWallWidth;
+        bool allBeaconsAreLOS;
+        double maxDBDistance; // hardcoded, not a param
+        double stepDBDistance; // hardcoded, not a param
+        
+        unsigned char sequence;
+    
         std::default_random_engine random_generator;
     };
 

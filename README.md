@@ -44,6 +44,7 @@ To add the plugin to a Gazebo model, the next code must be present in the .sdf o
   <tag_id>0</tag_id>
   <topic_name_ranging>uwb/tag_1_ranging</topic_name_ranging>
   <topic_name_anchors>uwb/tag_1_anchors</topic_name_anchors>
+  <topic_name_serial_ranging>uwb/tag_1_serial_ranging</topic_name_serial_ranging>
 </plugin>
 ``` 
 
@@ -55,7 +56,52 @@ To add the plugin to a Gazebo model, the next code must be present in the .sdf o
 * tag_id: tag identifier, a number.
 * topic_name_ranging: Topic name to publish the ranging messages from the tag
 * topic_name_anchors: Topic name to publish Visualization MarkerArray messages from the tag
+* topic_name_serial_ranging: Topic name to publish the ranging messages from the tag similar to real uwb tag serial reading structured as:
+  ``` python
+  # 0: "DIST",
+  # 1: <NUM_READINGS>,
 
+  # 2: "AN0",
+  # 3: <ANCHOR_0_ID>,
+  # 4: <ANCHOR_0_X>,
+  # 5: <ANCHOR_0_Y>,
+  # 6: <ANCHOR_0_Z>,
+  # 7: <ANCHOR_0_DISTANCE>,
+
+  # 8: "AN1",
+  # 9: <ANCHOR_1_ID>,
+  #10: <ANCHOR_1_X>,
+  #11: <ANCHOR_1_Y>,
+  #12: <ANCHOR_1_Z>,
+  #13: <ANCHOR_1_DISTANCE>,
+
+  #14: "AN2",
+  #15: <ANCHOR_2_ID>,
+  #16: <ANCHOR_2_X>,
+  #17: <ANCHOR_2_Y>,
+  #18: <ANCHOR_2_Z>,
+  #19: <ANCHOR_2_DISTANCE>,
+
+  #20: "AN3",
+  #21: <ANCHOR_3_ID>,
+  #22: <ANCHOR_3_X>,
+  #23: <ANCHOR_3_Y>,
+  #24: <ANCHOR_3_Z>,
+  #25: <ANCHOR_3_DISTANCE>,
+
+  #26: "POS",
+  #27: <TAG_SELF_POS_X>,
+  #28: <TAG_SELF_POS_Y>,
+  #29: <TAG_SELF_POS_Z>,
+  #30: <??>
+
+  e.g.:
+  "DIST,4,AN0,2F2F,3.05,2.68,0.00,2.21,AN1,2C9D,-0.04,2.91,0.00,2.39,AN2,2ED0,3.02,0.00,0.00,2.19,AN3,2BA2,0.00,0.00,0.00,2.56,POS,1.59,1.65,1.27,44"
+  0    1 2   3    4    5    6    7    8   9    10    11   12   13   14  15   16   17   18   19   20  21   22    23   24  25   26  27   28   29   30
+  or 
+  "DIST,3,AN0,2F2F,3.05,2.68,0.00,2.20,AN1,2ED0,3.02,0.00,0.00,2.23,AN2,2BA2,0.00,0.00,0.00,3.13,POS,1.76,1.59,0.51,40"
+  0    1 2   3    4    5    6    7    8   9    10   11   12   13   14  15   16   17   18   19   20  21   22   23   24
+  ```
 
 To place an anchor in a Gazebo's world, the only requirement is that the model must have a name starting with ```anchor_prefix```. A simple model could be:
 
